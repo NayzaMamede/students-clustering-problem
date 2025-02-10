@@ -402,7 +402,7 @@ def realocar_aluno(m, distancias, demandas, capacidades_escolas, alocacao, inici
 
 #### EXECUÇÃO DO ALGORITMO #####
 
-def grasp_reativo(m, n, p_series, distancias, demandas, capacidades_escolas, max_time=300, delta=10, update_interval=20):
+def grasp_reativo(m, n, p_series, distancias, demandas, capacidades_escolas, max_time=300, update_interval=20):
     # Discretização de alpha
     alphas = np.linspace(0.1, 1.0, 10) 
     probabilidades = np.ones(len(alphas)) / len(alphas)  # Inicialmente, probabilidades iguais
@@ -455,7 +455,7 @@ def grasp_reativo(m, n, p_series, distancias, demandas, capacidades_escolas, max
             media_fitness[indice_alpha] = fitness_local
 
         # Atualiza o desempenho do alpha escolhido
-        desempenho[indice_alpha] = (fitness_local / media_fitness[indice_alpha]) ** delta
+        desempenho[indice_alpha] = (fitness_local / media_fitness[indice_alpha])
 
         iteracao += 1
         # Atualiza as probabilidades a cada 'update_interval' iterações
