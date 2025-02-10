@@ -402,18 +402,19 @@ def realocar_aluno(m, distancias, demandas, capacidades_escolas, alocacao, inici
 
 #### EXECUÇÃO DO ALGORITMO #####
 
-def grasp_reativo(j, m, n, p_series, distancias, demandas, capacidades_escolas, max_time=1200):
+def grasp_reativo(m, n, p_series, distancias, demandas, capacidades_escolas, max_time=300, delta=10, update_interval=20):
     # Discretização de alpha
     alphas = np.linspace(0.1, 1.0, 10) 
     probabilidades = np.ones(len(alphas)) / len(alphas)  # Inicialmente, probabilidades iguais
     desempenho = np.zeros(len(alphas))  # Para acumular o desempenho (fitness) de cada alpha
     uso_alpha = np.zeros(len(alphas))  # Contador de quantas vezes cada alpha foi usado
+    media_fitness = np.ones(len(alphas)) * float('inf')  # Média do fitness para cada alpha
 
     melhor_solucao = None
     melhor_fitness = float('inf')
     inicio = time.time()
+    iteracao = 0
 
-    i = 0
     while True:
         # Verifica se o tempo limite foi atingido
         if time.time() - inicio >= max_time:
@@ -426,33 +427,43 @@ def grasp_reativo(j, m, n, p_series, distancias, demandas, capacidades_escolas, 
 
         # Geração da solução inicial
         alocacao = executar(m, n, p_series, distancias, demandas, capacidades_escolas, alpha)
-        
 
         # Primeiro movimento de melhoria
         nova_solucao = desativar_escolas(m, n, p_series, distancias, demandas, capacidades_escolas, alocacao)
-        
-        # Segundo movimento de melhoria
-        busca_local, fitness_local = realocacao_alunos(m, distancias, demandas, nova_solucao, inicio, max_time)
 
-        # Terceiro movimento de melhoria
-        busca_local, fitness_local = realocar_aluno(m, distancias, demandas, capacidades_escolas, busca_local, inicio, max_time)
-        
+        # Loop entre segundo e terceiro movimento de melhoria
+        while True:
+            # Segundo movimento de melhoria
+            busca_local, fitness_local = realocacao_alunos(m, distancias, demandas, nova_solucao, inicio, max_time)
+
+            # Terceiro movimento de melhoria
+            nova_solucao, fitness_atualizado = realocar_aluno(m, distancias, demandas, capacidades_escolas, busca_local, inicio, max_time)
+
+            if fitness_atualizado >= fitness_local:
+                break  # Se não houver melhora, saia do loop
+
+            fitness_local = fitness_atualizado
 
         if fitness_local < melhor_fitness:
-            melhor_solucao = busca_local
+            melhor_solucao = nova_solucao
             melhor_fitness = fitness_local
-       
-        # Atualiza o desempenho do alpha escolhido
-    
-        desempenho[indice_alpha] += 1 / (1 + np.log(1 + fitness_local))
 
-        # Atualiza as probabilidades
-        if uso_alpha.sum() > 0:
-            probabilidades = desempenho / desempenho.sum()
+        # Atualiza a média do fitness para o alpha escolhido
+        if uso_alpha[indice_alpha] > 1:
+            media_fitness[indice_alpha] = (media_fitness[indice_alpha] * (uso_alpha[indice_alpha] - 1) + fitness_local) / uso_alpha[indice_alpha]
         else:
-            probabilidades = np.ones(len(alphas)) / len(alphas)
+            media_fitness[indice_alpha] = fitness_local
 
-        i += 1
+        # Atualiza o desempenho do alpha escolhido
+        desempenho[indice_alpha] = (fitness_local / media_fitness[indice_alpha]) ** delta
+
+        iteracao += 1
+        # Atualiza as probabilidades a cada 'update_interval' iterações
+        if iteracao % update_interval == 0:
+            if desempenho.sum() > 0:
+                probabilidades = desempenho / desempenho.sum()
+            else:
+                probabilidades = np.ones(len(alphas)) / len(alphas)
 
     return melhor_solucao, melhor_fitness
 
