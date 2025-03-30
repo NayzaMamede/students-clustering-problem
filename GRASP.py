@@ -58,7 +58,7 @@ def selecionar_escolas(n, p_series, capacidades_escolas, alunos_por_serie, alpha
         min_capacidade = min(capacidades_totais_nao_selecionadas)
 
         # Calcular o limiar usando o parâmetro alpha
-        limiar = min_capacidade + alpha * (max_capacidade - min_capacidade)
+        limiar = max_capacidade + alpha * (max_capacidade - min_capacidade)
 
         # Criar a lista restrita de escolas com capacidade acima ou igual ao limiar
         escolas_rcl = [escola for escola in escolas_nao_selecionadas 
